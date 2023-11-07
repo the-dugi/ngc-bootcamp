@@ -1,4 +1,4 @@
-import { createOptimizedPicture } from '../../scripts/lib-franklin.js';
+import { createOptimizedPicture } from '../../scripts/aem.js';
 
 /**
  * Loads a fragment.
@@ -7,11 +7,15 @@ import { createOptimizedPicture } from '../../scripts/lib-franklin.js';
  */
 async function loadFragment(path) {
   if (path && path.startsWith('/')) {
-    const resp = await fetch(path);
-    if (resp.ok) {
-      const parser = new DOMParser();
-      return parser.parseFromString(await resp.text(), 'text/html');
-    }
+    try {
+        const resp = await fetch(path);
+        if (resp.ok) {
+          const parser = new DOMParser();
+          return parser.parseFromString(await resp.text(), 'text/html');
+        }
+      } catch (error) {
+        console.error("There has been a problem with your fetch operation:", error);
+      }
   }
   return null;
 }
@@ -32,8 +36,8 @@ function getMetadata(name, doc = document) {
  * @param {HTMLElement} $block The header block element
  */
 export default async function decorate(block) {
-  const link = block.querySelector('a');
-  const path = link ? link.getAttribute('href') : block.textContent.trim();
+  const link = block.querySelector('a') ? block.querySelector('a') : document.createElement('a');
+  const path = link.getAttribute('href') ? link.getAttribute('href') : block.textContent.trim();
   const doc = await loadFragment(path);
   if (!doc) {
     return;
@@ -69,6 +73,7 @@ export default async function decorate(block) {
   cta.append(link);
   link.textContent = 'Read More';
   link.className = 'button primary';
+  if (!link.getAttribute('href')) link.setAttribute('href', path);
 
   /**
    * Add a dev that can contain all the elements.
